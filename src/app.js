@@ -9,6 +9,10 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+app.get("/", (req, res) => {
+  res.send("hey, its a vet app server");
+});
+
 app.use("/v1/users", userRoutes);
 
 app.all("*", (req, res) => {

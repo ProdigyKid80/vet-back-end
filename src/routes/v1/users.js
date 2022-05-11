@@ -1,5 +1,4 @@
 const express = require("express");
-const Joi = require("joi");
 const mysql = require("mysql2/promise");
 const bcrypt = require("bcrypt");
 const jsonwebtoken = require("jsonwebtoken");
@@ -7,26 +6,16 @@ const jsonwebtoken = require("jsonwebtoken");
 const { mysqlConfig, jwtSecret } = require("../../config");
 const validation = require("../../middleware/validation");
 const { isLoggedIn } = require("../../middleware/middleware");
+const {
+  registrationSchema,
+  loginSchema,
+  changePassSchema,
+  forgotPassSchema,
+} = require("../../middleware/schemas");
 
 const router = express.Router();
 
 const status500 = "An issue was found. Please, try again later";
-
-const registrationSchema = Joi.object({
-  name: Joi.string().trim().required(),
-  email: Joi.string().email().lowercase().trim().required(),
-  password: Joi.string().required(),
-});
-
-const loginSchema = Joi.object({
-  email: Joi.string().email().lowercase().trim().required(),
-  password: Joi.string().required(),
-});
-
-const changePassSchema = Joi.object({
-  oldPass: Joi.string().required(),
-  newPass: Joi.string().required(),
-});
 
 router.post("/register", validation(registrationSchema), async (req, res) => {
   try {
@@ -42,7 +31,7 @@ router.post("/register", validation(registrationSchema), async (req, res) => {
 
     await con.end();
 
-    if (!data.insertId || data.affectedRows !== 1) {
+    if (!data.insertId || !data.affectedRows) {
       console.log(data);
       return res.status(500).send({ err: status500 });
     }
@@ -127,7 +116,7 @@ router.post(
 
       await con.end();
 
-      if (data.affectedRows !== 1) {
+      if (!data.affectedRows) {
         console.log(data);
         return res.status(500).send({ err: status500 });
       }
@@ -141,5 +130,32 @@ router.post(
     }
   }
 );
+
+router.post("/forgot", validation(forgotPassSchema), async (req, res) => {
+  try {
+    const randomPass = Math.random().toString(36).slice(-8);
+    const hash = bcrypt.hashSync(randomPass, 10);
+
+    const con = await mysql.createConnection(mysqlConfig);
+    const [data] = await con.execute(`
+        UPDATE users SET password = '${hash}'
+        WHERE email = ${mysql.escape(req.body.email)}
+      `);
+
+    await con.end();
+
+    if (!data.affectedRows) {
+      console.log(data);
+      return res.status(500).send({ err: status500 });
+    }
+
+    return res.send({
+      msg: `Temporary password was sent to ${data.email}`,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send({ err: status500 });
+  }
+});
 
 module.exports = router;
