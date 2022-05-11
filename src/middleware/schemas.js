@@ -20,9 +20,16 @@ const forgotPassSchema = Joi.object({
   email: Joi.string().email().lowercase().trim().required(),
 });
 
+const petSchema = Joi.object({
+  name: Joi.string().trim().required(),
+  birthday: Joi.date(),
+  email: Joi.string().email().trim(),
+});
+
 module.exports = {
   registrationSchema,
   loginSchema,
   changePassSchema,
   forgotPassSchema,
+  petSchema,
 };
