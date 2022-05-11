@@ -2,8 +2,14 @@ const express = require("express");
 const mysql = require("mysql2/promise");
 const bcrypt = require("bcrypt");
 const jsonwebtoken = require("jsonwebtoken");
+const fetch = require("node-fetch");
 
-const { mysqlConfig, jwtSecret } = require("../../config");
+const {
+  mysqlConfig,
+  jwtSecret,
+  mailServer,
+  mailServerPassword,
+} = require("../../config");
 const validation = require("../../middleware/validation");
 const { isLoggedIn } = require("../../middleware/middleware");
 const {
@@ -149,8 +155,23 @@ router.post("/forgot", validation(forgotPassSchema), async (req, res) => {
       return res.status(500).send({ err: status500 });
     }
 
+    const response = await fetch(mailServer, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        password: mailServerPassword,
+        email: req.body.email,
+        message: `Your temporary password is ${randomPass}`,
+      }),
+    });
+    const json = await response.json();
+    console.log(json.info);
+    console.log(randomPass);
+
     return res.send({
-      msg: `Temporary password was sent to ${data.email}`,
+      msg: `Temporary password was sent to ${req.body.email}`,
     });
   } catch (err) {
     console.log(err);
