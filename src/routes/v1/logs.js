@@ -9,11 +9,11 @@ const router = express.Router();
 
 const status500 = "An issue was found. Please, try again later";
 
-router.get("/", isLoggedIn, async (req, res) => {
+router.get("/:id", isLoggedIn, async (req, res) => {
   try {
     const con = await mysql.createConnection(mysqlConfig);
     const [data] = await con.execute(`
-      SELECT * FROM logs WHERE id = ${req.body.id}
+      SELECT logs.*, pets.name FROM logs, pets WHERE logs.pet_id = ${req.params.id} AND logs.pet_id = pets.id
     `);
     await con.end();
 
@@ -28,10 +28,10 @@ router.post("/", isLoggedIn, validation(logSchema), async (req, res) => {
   try {
     const con = await mysql.createConnection(mysqlConfig);
     const [data] = await con.execute(`
-      INSERT INTO logs (pet_id, status, description) 
-           VALUES (${req.body.id}, ${mysql.escape(
-      req.body.status
-    )}, ${mysql.escape(req.body.description)})
+      INSERT INTO logs (pet_id, title, description, date) 
+           VALUES (${req.body.pet_id}, ${mysql.escape(
+      req.body.title
+    )}, ${mysql.escape(req.body.description)}, ${mysql.escape(req.body.date)})
     `);
 
     await con.end();

@@ -27,9 +27,10 @@ const petSchema = Joi.object({
 });
 
 const logSchema = Joi.object({
-  id: Joi.number().required(),
-  status: Joi.string().trim().required(),
+  pet_id: Joi.number().required(),
+  title: Joi.string().trim().required(),
   description: Joi.string().trim().required(),
+  date: Joi.date().required(),
 });
 
 const resetPassSchema = Joi.object({
