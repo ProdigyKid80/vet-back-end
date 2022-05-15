@@ -17,6 +17,7 @@ const {
   loginSchema,
   changePassSchema,
   forgotPassSchema,
+  resetPassSchema,
 } = require("../../middleware/schemas");
 
 const router = express.Router();
@@ -143,14 +144,29 @@ router.post("/forgot", validation(forgotPassSchema), async (req, res) => {
     const hash = bcrypt.hashSync(randomPass, 10);
 
     const con = await mysql.createConnection(mysqlConfig);
-    const [data] = await con.execute(`
-        UPDATE users SET password = '${hash}'
-        WHERE email = ${mysql.escape(req.body.email)}
-      `);
+    const [data1] = await con.execute(`
+      SELECT id FROM users WHERE email = ${mysql.escape(req.body.email)} LIMIT 1
+    `);
+
+    if (data1.length !== 1) {
+      await con.end();
+      return res.send({
+        msg: "If your email is correct, you will shortly get a message",
+      });
+    }
+
+    const [data2] = await con.execute(`
+      INSERT INTO reset_tokens (email, code)
+      VALUES (${mysql.escape(req.body.email)}, '${randomPass}')
+    `);
+    // const [data] = await con.execute(`
+    //     UPDATE users SET password = '${hash}'
+    //     WHERE email = ${mysql.escape(req.body.email)}
+    //   `);
 
     await con.end();
 
-    if (!data.affectedRows) {
+    if (!data2.insertId) {
       console.log(data);
       return res.status(500).send({ err: status500 });
     }
@@ -163,7 +179,10 @@ router.post("/forgot", validation(forgotPassSchema), async (req, res) => {
       body: JSON.stringify({
         password: mailServerPassword,
         email: req.body.email,
-        message: `Your temporary password is ${randomPass}`,
+        message: `Click here to change password http://localhost:8080/v1/users/reset-password?email=${encodeURI(
+          req.body.email
+        )}&token=${randomPass}`,
+        // message: `Your temporary password is ${randomPass}`,
       }),
     });
     const json = await response.json();
@@ -178,5 +197,69 @@ router.post("/forgot", validation(forgotPassSchema), async (req, res) => {
     return res.status(500).send({ err: status500 });
   }
 });
+
+router.post(
+  "/reset-password",
+  validation(resetPassSchema),
+  async (req, res) => {
+    try {
+      // const randomPass = Math.random().toString(36).slice(-8);
+      // const hash = bcrypt.hashSync(randomPass, 10);
+
+      const con = await mysql.createConnection(mysqlConfig);
+      const [data] = await con.execute(`
+      SELECT * FROM reset_tokens WHERE email=${mysql.escape(
+        req.body.email
+      )} AND code=${mysql.escape(req.body.token)} LIMIT 1
+    `);
+
+      console.log(data[0]);
+
+      if (data.length !== 1) {
+        await con.end();
+        return res.status(400).send({
+          msg: "Invalid change password request.",
+        });
+      }
+
+      if (
+        (new Date().getTime() - new Date(data[0].timestamp).getTime()) /
+          600000 >
+        30
+      ) {
+        await con.end();
+        return res
+          .status(400)
+          .send({ err: "Invalid change password request. Please try again" });
+      }
+
+      const hash = bcrypt.hashSync(req.body.newPass, 10);
+
+      const [changeResponse] = await con.execute(`
+        UPDATE users SET password = '${hash}' WHERE email = ${mysql.escape(
+        req.body.email
+      )}
+      `);
+
+      if (!changeResponse.affectedRows) {
+        await con.end();
+        console.log(changeResponse);
+        return res.status(500).send({ msg: status500 });
+      }
+
+      await con.execute(`
+        DELETE FROM reset_tokens WHERE id = ${data[0].id}
+      `);
+
+      await con.end();
+      return res.send({
+        msg: `Password changed successfully`,
+      });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).send({ err: status500 });
+    }
+  }
+);
 
 module.exports = router;

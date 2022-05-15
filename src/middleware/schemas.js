@@ -23,7 +23,19 @@ const forgotPassSchema = Joi.object({
 const petSchema = Joi.object({
   name: Joi.string().trim().required(),
   birthday: Joi.date(),
-  email: Joi.string().email().trim(),
+  email: Joi.string().email().lowercase().trim(),
+});
+
+const logSchema = Joi.object({
+  id: Joi.number().required(),
+  status: Joi.string().trim().required(),
+  description: Joi.string().trim().required(),
+});
+
+const resetPassSchema = Joi.object({
+  email: Joi.string().email().lowercase().trim(),
+  token: Joi.string().required(),
+  newPass: Joi.string().required(),
 });
 
 module.exports = {
@@ -32,4 +44,6 @@ module.exports = {
   changePassSchema,
   forgotPassSchema,
   petSchema,
+  logSchema,
+  resetPassSchema,
 };

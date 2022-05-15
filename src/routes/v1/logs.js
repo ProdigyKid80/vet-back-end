@@ -2,7 +2,7 @@ const express = require("express");
 const mysql = require("mysql2/promise");
 const { mysqlConfig } = require("../../config");
 const { isLoggedIn } = require("../../middleware/middleware");
-const { petSchema } = require("../../middleware/schemas");
+const { logSchema } = require("../../middleware/schemas");
 const validation = require("../../middleware/validation");
 
 const router = express.Router();
@@ -13,7 +13,7 @@ router.get("/", isLoggedIn, async (req, res) => {
   try {
     const con = await mysql.createConnection(mysqlConfig);
     const [data] = await con.execute(`
-      SELECT * FROM pets WHERE archived=0
+      SELECT * FROM logs WHERE id = ${req.body.id}
     `);
     await con.end();
 
@@ -24,14 +24,14 @@ router.get("/", isLoggedIn, async (req, res) => {
   }
 });
 
-router.post("/", isLoggedIn, validation(petSchema), async (req, res) => {
+router.post("/", isLoggedIn, validation(logSchema), async (req, res) => {
   try {
     const con = await mysql.createConnection(mysqlConfig);
     const [data] = await con.execute(`
-      INSERT INTO pets (name, birthday, email) 
-           VALUES (${mysql.escape(req.body.name)}, ${mysql.escape(
-      req.body.birthday
-    )}, ${mysql.escape(req.body.email)})
+      INSERT INTO logs (pet_id, status, description) 
+           VALUES (${req.body.id}, ${mysql.escape(
+      req.body.status
+    )}, ${mysql.escape(req.body.description)})
     `);
 
     await con.end();
@@ -42,31 +42,8 @@ router.post("/", isLoggedIn, validation(petSchema), async (req, res) => {
     }
 
     return res.send({
-      msg: "Successfully added a pet",
+      msg: "Successfully added a log",
       id: data.insertId,
-    });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).send({ err: status500 });
-  }
-});
-
-router.delete("/", isLoggedIn, async (req, res) => {
-  try {
-    const con = await mysql.createConnection(mysqlConfig);
-    const [data] = await con.execute(`
-      UPDATE pets SET archived = 1 WHERE id = ${req.body.id}
-    `);
-
-    await con.end();
-
-    if (!data.affectedRows) {
-      console.log(data);
-      return res.status(500).send({ err: status500 });
-    }
-
-    return res.send({
-      msg: "Successfully deleted a pet",
     });
   } catch (err) {
     console.log(err);
