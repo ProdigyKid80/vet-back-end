@@ -51,11 +51,11 @@ router.post("/", isLoggedIn, validation(petSchema), async (req, res) => {
   }
 });
 
-router.delete("/", isLoggedIn, async (req, res) => {
+router.delete("/:id", isLoggedIn, async (req, res) => {
   try {
     const con = await mysql.createConnection(mysqlConfig);
     const [data] = await con.execute(`
-      UPDATE pets SET archived = 1 WHERE id = ${req.body.id}
+      UPDATE pets SET archived = 1 WHERE id = ${req.params.id}
     `);
 
     await con.end();
