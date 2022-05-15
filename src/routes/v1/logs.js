@@ -13,7 +13,7 @@ router.get("/:id", isLoggedIn, async (req, res) => {
   try {
     const con = await mysql.createConnection(mysqlConfig);
     const [data] = await con.execute(`
-      SELECT logs.*, pets.name FROM logs, pets WHERE logs.pet_id = ${req.params.id} AND logs.pet_id = pets.id
+      SELECT logs.*, pets.name FROM logs, pets WHERE logs.pet_id = ${req.params.id} AND logs.pet_id = pets.id ORDER BY logs.date desc
     `);
     await con.end();
 
