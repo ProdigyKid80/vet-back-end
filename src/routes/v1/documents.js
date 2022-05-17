@@ -17,11 +17,12 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-router.get("/", isLoggedIn, async (req, res) => {
-  console.log(req.user);
+router.get("/:id", isLoggedIn, async (req, res) => {
   try {
     const con = await mysql.createConnection(mysqlConfig);
-    const [data] = await con.execute(`SELECT * FROM documents`);
+    const [data] = await con.execute(
+      `SELECT * FROM documents WHERE pet_id = ${req.params.id}`
+    );
     await con.end();
 
     return res.send(data);
@@ -31,7 +32,7 @@ router.get("/", isLoggedIn, async (req, res) => {
   }
 });
 
-router.get("/:filename", isLoggedIn, async (req, res) => {
+router.get("/file/:filename", async (req, res) => {
   try {
     const con = await mysql.createConnection(mysqlConfig);
     const [data] = await con.execute(
