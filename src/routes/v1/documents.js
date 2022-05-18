@@ -11,8 +11,7 @@ const status500 = "An issue was found. Please, try again later";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "./docs"),
-  filename: (req, file, cb) =>
-    cb(null, `${Math.floor(Math.random() * 1000)}.pdf`),
+  filename: (req, file, cb) => cb(null, `${file.originalname}.pdf`),
 });
 
 const upload = multer({ storage });
@@ -57,7 +56,7 @@ router.post("/:id", upload.single("document"), async (req, res) => {
     const con = await mysql.createConnection(mysqlConfig);
     const [data] = await con.execute(`
         INSERT INTO documents (filename, pet_id)
-        VALUES ('${req.file.filename}', ${req.params.id})
+        VALUES ('${req.file.originalname}', ${req.params.id})
     `);
     await con.end();
 
