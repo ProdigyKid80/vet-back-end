@@ -52,12 +52,12 @@ router.get("/file/:filename", async (req, res) => {
   }
 });
 
-router.post("/", isLoggedIn, upload.single("document"), async (req, res) => {
+router.post("/:id", upload.single("document"), async (req, res) => {
   try {
     const con = await mysql.createConnection(mysqlConfig);
     const [data] = await con.execute(`
-        INSERT INTO documents (filename, user_id)
-        VALUES ('${req.file.filename}', ${req.user.id})
+        INSERT INTO documents (filename, pet_id)
+        VALUES ('${req.file.filename}', ${req.params.id})
     `);
     await con.end();
 
