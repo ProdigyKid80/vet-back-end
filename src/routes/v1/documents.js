@@ -11,7 +11,7 @@ const status500 = "An issue was found. Please, try again later";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "./docs"),
-  filename: (req, file, cb) => cb(null, `${file.originalname}.pdf`),
+  filename: (req, file, cb) => cb(null, `${file.originalname}`),
 });
 
 const upload = multer({ storage });
